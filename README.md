@@ -19,7 +19,7 @@ TypeSafe's own Jev is a paid, closed, hosted service. This plugin instead defaul
 /plugin install smart-task
 
 # or locally, for development
-cc --plugin-dir /path/to/claude-multiagent-coding
+claude --plugin-dir /path/to/claude-multiagent-coding
 ```
 
 ## Usage

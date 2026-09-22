@@ -20,13 +20,13 @@ Initial request: $ARGUMENTS
 **Actions**:
 1. Launch the `jev-triage` agent with the raw request (and, if this is a follow-up in an ongoing conversation, a one-paragraph summary of relevant prior context — do not paste the whole conversation).
 2. Parse its structured JSON output: `task_type`, `complexity_score`, the three Noul flags, `recommended_lane`, `recommended_model`, `reasoning`.
-3. If `needs_clarification.value` is true, or any Noul confidence is below 0.6 on a flag that changes the routing decision, pause and ask the user via `AskUserQuestion` before proceeding — do not guess past a genuine ambiguity.
+3. If `needs_clarification.value` is true, pause and ask the user via `AskUserQuestion` before proceeding — do not guess past a genuine ambiguity. (A low-confidence `needs_mcp`/`needs_multiagent` does not need this — `jev-triage` already resolved it to the safer, more-effort default on its own.)
 4. Briefly tell the user the decision in one line before proceeding, e.g.: "Classificado como `bugfix`, complexidade 3/10 → lane `standard`, modelo `sonnet`." This is the audit trail — always show it, even for `quick` lane tasks.
-5. Enter the lane indicated below. If the user explicitly asks for a different lane than recommended (e.g. "faz isso rápido, sem essa cerimônia toda" or "quero o pipeline completo mesmo sendo simples"), honor their override and say you're doing so.
+5. Enter the lane indicated by `recommended_lane` (task_type overrides, e.g. `specific-task`/`mcp-task`/`research`, take precedence over the plain complexity-score bands — see the lane headers below and `jev-triage`'s routing table for exactly which wins). If the user explicitly asks for a different lane than recommended (e.g. "faz isso rápido, sem essa cerimônia toda" or "quero o pipeline completo mesmo sendo simples"), honor their override and say you're doing so.
 
 ---
 
-## Lane: `quick` (complexity 0–2, or `research` at complexity ≤5)
+## Lane: `quick` (complexity 0–2 and task_type in feature/bugfix/refactor, or `research` at complexity ≤5)
 
 **Goal**: Get a trivial or read-only request done with minimal ceremony.
 
@@ -39,7 +39,7 @@ Initial request: $ARGUMENTS
 
 ---
 
-## Lane: `specific-mcp` (task_type `specific-task` or `mcp-task`, or `research` at complexity >5)
+## Lane: `specific-mcp` (task_type `specific-task` or `mcp-task` at complexity < 9 — this overrides the complexity-only bands above and below — or `research` at complexity >5)
 
 **Goal**: Execute a narrow, well-defined request — whether it's a mechanical code change or an MCP-tool-centered action — correctly and efficiently.
 
@@ -51,7 +51,7 @@ Initial request: $ARGUMENTS
 
 ---
 
-## Lane: `standard` (complexity 3–8, task_type in feature/bugfix/refactor)
+## Lane: `standard` (complexity 3–8 and task_type in feature/bugfix/refactor)
 
 **Goal**: Build or fix something real without the overhead of a full parallel multi-agent pipeline.
 
@@ -65,7 +65,7 @@ Initial request: $ARGUMENTS
 
 ---
 
-## Lane: `complex` (complexity 9–10)
+## Lane: `complex` (complexity 9–10, any task_type — at this score even a `specific-task`/`mcp-task` gets the full pipeline)
 
 **Goal**: Handle genuinely large or architecturally significant work with the depth it needs.
 

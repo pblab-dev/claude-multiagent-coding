@@ -29,7 +29,7 @@ Load this skill whenever a triage decision is needed before executing a task —
    - `standard` — one explorer + one architect + one reviewer, mostly Sonnet, Opus for architecture at higher scores.
    - `complex` — full parallel multi-agent pipeline (2–3 explorers, 2–3 architects, 3 reviewers), Opus for architecture and at least one review pass.
 
-3. **Surface low-confidence or blocking signals before proceeding.** If `needs_clarification.value` is true, or any Noul has confidence below 0.6, resolve that first — ask the user via `AskUserQuestion` rather than guessing. Never silently pick a lane when the request is genuinely ambiguous.
+3. **Surface real ambiguity before proceeding.** If `needs_clarification.value` is true — including when it was forced true because its own confidence was below 0.6 — ask the user via `AskUserQuestion` rather than guessing; never silently pick a lane when the request is genuinely ambiguous. A low-confidence `needs_mcp` or `needs_multiagent`, by contrast, just resolves to `true` (provision more effort) without needing to interrupt the user.
 
 4. **Emit the decision as a single structured block** (the JSON contract in `references/decision-primitives.md`) before starting the chosen lane. This keeps the routing decision auditable — the user can see *why* a task got the effort level it got.
 

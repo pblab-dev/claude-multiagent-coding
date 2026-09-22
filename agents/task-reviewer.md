@@ -1,14 +1,15 @@
 ---
 name: task-reviewer
-description: Use this agent after implementing a task to review the resulting changes for correctness, adherence to project guidelines, and quality. Generalized version of a code reviewer that also works for specific tasks and MCP-centric tasks. Reviews unstaged changes from `git diff` by default; the caller should specify a different scope when relevant (e.g. a script's output, or the sequence of MCP calls made).
+description: |
+  Use this agent after implementing a task to review the resulting changes for correctness, adherence to project guidelines, and quality. Generalized version of a code reviewer that also works for specific tasks and MCP-centric tasks. Reviews unstaged changes from `git diff` by default; the caller should specify a different scope when relevant (e.g. a script's output, or the sequence of MCP calls made).
 
-Examples:
-<example>
-Context: /smart-task finished implementing a feature via the standard or complex lane.
-user: "revise as mudanças que acabamos de fazer"
-assistant: "Vou usar o task-reviewer agent para revisar o diff antes de reportar como concluído."
-<commentary>Any implementation lane ends with a task-reviewer pass before the task is reported done.</commentary>
-</example>
+  Examples:
+  <example>
+  Context: /smart-task finished implementing a feature via the standard or complex lane.
+  user: "revise as mudanças que acabamos de fazer"
+  assistant: "Vou usar o task-reviewer agent para revisar o diff antes de reportar como concluído."
+  <commentary>Any implementation lane ends with a task-reviewer pass before the task is reported done.</commentary>
+  </example>
 model: opus
 color: green
 ---

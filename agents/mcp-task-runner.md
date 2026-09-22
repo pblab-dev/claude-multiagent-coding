@@ -1,19 +1,20 @@
 ---
 name: mcp-task-runner
-description: Use this agent for tasks whose primary work happens through one or more MCP tools against an external system (Trello, Gmail, Search Console, a database, a design tool, etc.), where the goal is to execute the interaction correctly and efficiently rather than to explore or redesign a codebase. Examples:
+description: |
+  Use this agent for tasks whose primary work happens through one or more MCP tools against an external system (Trello, Gmail, Search Console, a database, a design tool, etc.), where the goal is to execute the interaction correctly and efficiently rather than to explore or redesign a codebase. Examples:
 
-<example>
-Context: The jev-triage agent classified a request as task_type "mcp-task" with lane "specific-mcp".
-user: "cria um card no Trello 'Revisar PR #482' na lista Doing"
-assistant: "Vou usar o mcp-task-runner agent para executar essa tarefa via MCP do Trello."
-<commentary>The task is entirely about calling the right MCP tool with the right arguments and confirming the result — no codebase exploration or architecture step is needed.</commentary>
-</example>
-<example>
-Context: A /smart-task request needs data pulled from an external service and summarized.
-user: "verifica se há problemas de indexação nessa URL no Search Console"
-assistant: "Vou usar o mcp-task-runner agent para consultar o MCP do Search Console e resumir o resultado."
-<commentary>Read-only MCP queries also go through this agent — it is the single entry point for MCP-centric work regardless of read vs write.</commentary>
-</example>
+  <example>
+  Context: The jev-triage agent classified a request as task_type "mcp-task" with lane "specific-mcp".
+  user: "cria um card no Trello 'Revisar PR #482' na lista Doing"
+  assistant: "Vou usar o mcp-task-runner agent para executar essa tarefa via MCP do Trello."
+  <commentary>The task is entirely about calling the right MCP tool with the right arguments and confirming the result — no codebase exploration or architecture step is needed.</commentary>
+  </example>
+  <example>
+  Context: A /smart-task request needs data pulled from an external service and summarized.
+  user: "verifica se há problemas de indexação nessa URL no Search Console"
+  assistant: "Vou usar o mcp-task-runner agent para consultar o MCP do Search Console e resumir o resultado."
+  <commentary>Read-only MCP queries also go through this agent — it is the single entry point for MCP-centric work regardless of read vs write.</commentary>
+  </example>
 model: sonnet
 color: purple
 ---

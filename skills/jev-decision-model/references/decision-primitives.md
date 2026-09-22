@@ -13,7 +13,7 @@ Used in this plugin for:
 - `needs_mcp` — is an MCP tool central to completing the task (not just incidentally useful)?
 - `needs_multiagent` — does the scope justify parallel exploration/architecture/review, or would that be pure overhead?
 
-Low-confidence Nouls (confidence < 0.6) should default to the safer branch: treat `needs_clarification` as true, treat `needs_multiagent` as true (over-provisioning effort is cheaper than under-provisioning it).
+Low-confidence Nouls (confidence < 0.6) don't all get the same treatment: a low-confidence `needs_clarification` should resolve to true **and** be surfaced to the user (via `AskUserQuestion`) before proceeding, since missing a real ambiguity is the one failure mode this flag exists to catch. A low-confidence `needs_mcp` or `needs_multiagent` should also resolve to true (over-provisioning effort is cheaper than under-provisioning it), but does not need to be surfaced — silently doing a bit more work is harmless.
 
 ## Escolha — selection among predefined options
 
@@ -45,10 +45,13 @@ Every triage decision is a single structured block, produced before any other wo
   "needs_mcp": { "value": false, "confidence": 0.9 },
   "needs_multiagent": { "value": false, "confidence": 0.9 },
   "recommended_lane": "quick | specific-mcp | standard | complex",
-  "recommended_model": "haiku | sonnet | opus",
+  "recommended_model": "none | sonnet | opus",
+  "source": "openjev | groq-direct | self",
   "reasoning": "one or two sentences justifying the above"
 }
 ```
+
+`recommended_model` never names `haiku` — that tier is what the triage step itself runs on (see below), not something a lane routes its work to. `source` records whether the classification came from the external decision layer or from Claude's own judgment (`self`).
 
 This mirrors what a real JEV-style decision model returns: typed, bounded, impossible to hallucinate outside the schema.
 
