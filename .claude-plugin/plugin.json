@@ -1,0 +1,19 @@
+{
+  "name": "smart-task",
+  "version": "0.1.0",
+  "description": "Multi-agent development command that uses a JEV-inspired structured decision layer to route any task (feature, bugfix, specific task, or MCP task) to the right pipeline depth and model tier (Haiku/Sonnet/Opus).",
+  "author": {
+    "name": "pblab-dev"
+  },
+  "homepage": "https://github.com/pblab-dev/claude-multiagent-coding",
+  "repository": "https://github.com/pblab-dev/claude-multiagent-coding",
+  "license": "MIT",
+  "keywords": [
+    "multi-agent",
+    "jev",
+    "task-routing",
+    "model-routing",
+    "development-workflow",
+    "claude-code-plugin"
+  ]
+}
