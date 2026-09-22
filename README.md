@@ -64,7 +64,9 @@ By default, triage runs entirely inside Claude (Haiku) — no setup needed. If y
    ```
    Then set `OPENJEV_URL=http://localhost:3001` before invoking `/smart-task`.
 
-2. **Groq directly** — if you don't want to run a separate server, set `GROQ_API_KEY` (get one at [console.groq.com](https://console.groq.com/keys)) and optionally `GROQ_MODEL` (default `llama-3.1-8b-instant`). `scripts/jev-decide.sh` calls Groq's OpenAI-compatible API directly, replicating OpenJev's own "oneshot" prompt/response contract — no server to run. Groq's low latency keeps this consistent with the "decide small, execute big" principle the whole plugin is built on.
+2. **Groq directly** — if you don't want to run a separate server, set `GROQ_API_KEY` (get one at [console.groq.com](https://console.groq.com/keys)) and optionally `GROQ_MODEL` (default `openai/gpt-oss-20b`; check `curl https://api.groq.com/openai/v1/models -H "Authorization: Bearer $GROQ_API_KEY"` for what's currently live, since Groq's catalog changes). `scripts/jev-decide.sh` calls Groq's OpenAI-compatible API directly, replicating OpenJev's own "oneshot" prompt/response contract — no server to run. Groq's low latency keeps this consistent with the "decide small, execute big" principle the whole plugin is built on.
+
+   **Known limitation, tested live**: this path is a single call to a small model in "oneshot" mode, so `complexity_score` calibration can vary noticeably between otherwise-identical runs (observed: the same rename request scored 3/10 once and 7/10 on a repeat run). `task_type`/`needs_*` classification was consistently correct across our tests. If tight score calibration matters more than zero setup, prefer OpenJev's `parallel` mode (per-option calibrated probabilities via multiple small calls) over Groq oneshot, or rely on the Claude self-classification fallback.
 
 3. **Neither set** → automatic fallback to Claude self-classification. This is the default, not a degraded mode.
 

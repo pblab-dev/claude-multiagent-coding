@@ -19,7 +19,7 @@
 # Env vars:
 #   OPENJEV_URL   Base URL of a running OpenJev server, e.g. http://localhost:3001
 #   GROQ_API_KEY  Groq API key (https://console.groq.com/keys)
-#   GROQ_MODEL    Groq model id (default: llama-3.1-8b-instant)
+#   GROQ_MODEL    Groq model id (default: openai/gpt-oss-20b)
 #
 # Output (stdout, on success): normalized JSON —
 #   {"task_type": "...", "complexity_score": 0-10,
@@ -50,8 +50,8 @@ QUESTIONS='{
       "feature": "A new capability that does not exist yet",
       "bugfix": "A defect in existing behavior",
       "refactor": "Restructuring with no behavior change",
-      "specific-task": "A narrow, well-defined, low-ambiguity request",
-      "mcp-task": "Work centered on calling an external tool or MCP integration",
+      "specific-task": "A narrow, well-defined, low-ambiguity request that stays local (no external service/tool call)",
+      "mcp-task": "The main action is calling an external tool/service/API — e.g. Trello, Gmail, Slack, a ticketing system, a database, a search console. If the request names an external product/service and asks to create, read, update or check something there, it is mcp-task, even if the wording is short",
       "research": "Investigation or explanation only, no implementation expected"
     }
   },
@@ -71,7 +71,7 @@ QUESTIONS='{
   },
   "needs_mcp": {
     "type": "noul",
-    "instructions": "Is an external tool or MCP integration central to completing this task (not just incidental)?"
+    "instructions": "Does completing this task require calling an external tool/service/API by name (e.g. Trello, Gmail, Slack, a ticketing system, a search console, a database)? Answer true whenever a specific external product/service is named as the target of the action."
   },
   "needs_multiagent": {
     "type": "noul",
@@ -112,7 +112,7 @@ fi
 
 # --- Path 2: direct Groq call, replicating OpenJev's "oneshot" contract ----------------------
 if [ -n "${GROQ_API_KEY:-}" ]; then
-  MODEL="${GROQ_MODEL:-llama-3.1-8b-instant}"
+  MODEL="${GROQ_MODEL:-openai/gpt-oss-20b}"
   SYSTEM="You are a precise decision engine. Answer every question based only on the provided state. Return probabilities that reflect genuine uncertainty. Do not invent information."
   USER_MSG=$(cat <<EOF
 STATE:
@@ -120,12 +120,12 @@ ${TASK}
 
 QUESTIONS:
 - task_type (choice): Which category best fits this development task?
-  Options -> feature: A new capability that does not exist yet, bugfix: A defect in existing behavior, refactor: Restructuring with no behavior change, specific-task: A narrow well-defined low-ambiguity request, mcp-task: Work centered on an external tool/MCP integration, research: Investigation or explanation only
+  Options -> feature: A new capability that does not exist yet, bugfix: A defect in existing behavior, refactor: Restructuring with no behavior change, specific-task: A narrow well-defined low-ambiguity request that stays local, mcp-task: The main action is calling an external tool/service/API by name (Trello, Gmail, Slack, a ticketing system, a database, a search console, etc.) — even a short request naming a specific external product as the target is mcp-task, research: Investigation or explanation only
 - complexity_band (score): Rate complexity (files touched, design decisions, integration points, ambiguity, blast radius).
   Levels -> 0=Trivial: single obvious change | 1=Simples-moderada: poucos arquivos, baixa ambiguidade | 2=Moderada-alta: multiplos modulos, pontos de integracao reais | 3=Alta: nova arquitetura, alta ambiguidade, amplo raio de impacto
   Answer with the LEVEL INDEX (0, 1, 2 or 3) as "score" — never a 0-10 value.
 - needs_clarification (noul): Does the request contain a real ambiguity that blocks safe execution?
-- needs_mcp (noul): Is an external tool or MCP integration central to completing this task?
+- needs_mcp (noul): Does completing this task require calling an external tool/service/API by name? Answer true whenever a specific external product/service is named as the target of the action.
 - needs_multiagent (noul): Does the scope justify a parallel explore/design/review pipeline rather than direct execution?
 
 Respond with JSON. For choice: { "choice", "confidence" }. For score: { "score" (0-3 level index), "confidence" }. For noul: { "noul" (0-1 probability) }. Top-level keys = question names.
