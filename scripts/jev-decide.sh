@@ -93,9 +93,9 @@ NORMALIZE='
 if [ -n "${OPENJEV_URL:-}" ]; then
   PAYLOAD=$(jq -n --arg state "$TASK" --argjson questions "$QUESTIONS" '{state: $state, questions: $questions}') || exit 1
   RESPONSE=$(curl -sS --max-time 15 -X POST "${OPENJEV_URL%/}/api/evaluate" \
-    -H "Content-Type: application/json" -d "$PAYLOAD") || exit 1
+    -H "Content-Type: application/json" -d "$PAYLOAD" | tr -d '\000-\037') || exit 1
 
-  echo "$RESPONSE" | jq -e "
+  printf '%s' "$RESPONSE" | jq -e "
     ${NORMALIZE}
     if .error then error(.error) else
     {
@@ -137,12 +137,18 @@ EOF
 
   # Header passed via a config file (process substitution) rather than -H on the command line,
   # so the API key never appears in this process's argv (visible to other local users via `ps`).
+  # Some Groq reasoning models (e.g. openai/gpt-oss-20b) can emit a "reasoning" field containing
+  # raw, unescaped control characters (observed: literal newlines inside a JSON string), which
+  # makes the whole HTTP response invalid JSON even though the "content" field we actually need
+  # is well-formed. Since the response is single-line/compact (no meaningful embedded whitespace
+  # in the fields we parse), stripping all raw control characters before parsing fixes this
+  # without depending on model-specific params.
   RESPONSE=$(curl -sS --max-time 15 https://api.groq.com/openai/v1/chat/completions \
     -K <(printf 'header = "Authorization: Bearer %s"\n' "${GROQ_API_KEY}") \
     -H "Content-Type: application/json" \
-    -d "$BODY") || exit 1
+    -d "$BODY" | tr -d '\000-\037') || exit 1
 
-  echo "$RESPONSE" | jq -e "
+  printf '%s' "$RESPONSE" | jq -e "
     ${NORMALIZE}
     (.choices[0].message.content | fromjson) as \$a |
     {
