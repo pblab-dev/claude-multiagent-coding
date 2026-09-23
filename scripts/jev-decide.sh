@@ -26,6 +26,7 @@
 #    "needs_clarification": {"value": bool, "confidence": 0-1},
 #    "needs_mcp": {"value": bool, "confidence": 0-1},
 #    "needs_multiagent": {"value": bool, "confidence": 0-1},
+#    "high_stakes": {"value": bool, "confidence": 0-1},
 #    "source": "openjev" | "groq-direct"}
 # On any failure (backend unconfigured, unreachable, or a required field missing from its
 # response): exit 1, empty stdout. A missing/invalid score is treated as failure, never as 0 —
@@ -39,6 +40,23 @@ fi
 
 command -v jq >/dev/null 2>&1 || exit 1
 command -v curl >/dev/null 2>&1 || exit 1
+
+# Load .env fresh on every invocation, from next to this script (plugin root), rather than relying
+# on the caller's inherited process environment. A long-running Claude Code session never sees
+# env vars set after it started, but this script is a fresh subprocess each call, so re-reading
+# .env here means editing it takes effect immediately without restarting the session — only an
+# already-exported OPENJEV_URL/GROQ_API_KEY (real env var) takes precedence over the file.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/../.env"
+if [ -f "$ENV_FILE" ]; then
+  while IFS='=' read -r key value; do
+    case "$key" in ''|'#'*) continue ;; esac
+    key="$(echo "$key" | tr -d '[:space:]')"
+    if [ -n "$key" ] && [ -z "${!key:-}" ]; then
+      export "$key=$value"
+    fi
+  done < "$ENV_FILE"
+fi
 
 # Score type uses an ordered array of level descriptions (OpenJev's ScoreQuestion.criteria: string[]).
 # The returned score is a float index (0..3) across these 4 levels; we scale it to 0-10 downstream.
@@ -76,6 +94,10 @@ QUESTIONS='{
   "needs_multiagent": {
     "type": "noul",
     "instructions": "Does the scope justify a parallel explore/design/review pipeline rather than direct execution?"
+  },
+  "high_stakes": {
+    "type": "noul",
+    "instructions": "Is this action hard or costly to reverse if done wrong — e.g. sending a message, deleting/overwriting records others can see, posting publicly, a schema migration, an auth/payment change? Answer false for ordinary reversible code edits."
   }
 }'
 
@@ -104,6 +126,7 @@ if [ -n "${OPENJEV_URL:-}" ]; then
       needs_clarification: noulFlag(.answers.needs_clarification.noul),
       needs_mcp: noulFlag(.answers.needs_mcp.noul),
       needs_multiagent: noulFlag(.answers.needs_multiagent.noul),
+      high_stakes: noulFlag(.answers.high_stakes.noul),
       source: \"openjev\"
     } end
   " 2>/dev/null && exit 0
@@ -127,6 +150,7 @@ QUESTIONS:
 - needs_clarification (noul): Does the request contain a real ambiguity that blocks safe execution?
 - needs_mcp (noul): Does completing this task require calling an external tool/service/API by name? Answer true whenever a specific external product/service is named as the target of the action.
 - needs_multiagent (noul): Does the scope justify a parallel explore/design/review pipeline rather than direct execution?
+- high_stakes (noul): Is this action hard or costly to reverse if done wrong (sending a message, deleting/overwriting records others can see, posting publicly, a schema migration, an auth/payment change)? Answer false for ordinary reversible code edits.
 
 Respond with JSON. For choice: { "choice", "confidence" }. For score: { "score" (0-3 level index), "confidence" }. For noul: { "noul" (0-1 probability) }. Top-level keys = question names.
 EOF
@@ -157,6 +181,7 @@ EOF
       needs_clarification: noulFlag(\$a.needs_clarification.noul),
       needs_mcp: noulFlag(\$a.needs_mcp.noul),
       needs_multiagent: noulFlag(\$a.needs_multiagent.noul),
+      high_stakes: noulFlag(\$a.high_stakes.noul),
       source: \"groq-direct\"
     }
   " 2>/dev/null && exit 0

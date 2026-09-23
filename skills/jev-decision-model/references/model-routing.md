@@ -21,7 +21,7 @@ Overrides that apply regardless of score:
 | Lane | Agents used | Model(s) |
 |---|---|---|
 | `quick` | none (main thread executes directly) | inherited from the session (no override) |
-| `specific-mcp` | `mcp-task-runner` (mcp-task) or direct execution (specific-task/research) | `sonnet`; escalate to `opus` if `complexity_score >= 7` or the action is hard to reverse |
+| `specific-mcp` | `mcp-task-runner` (mcp-task) or direct execution (specific-task/research) | `sonnet`; escalate to `opus` if `complexity_score >= 7` or `high_stakes.value` is true |
 | `standard` | 1x `task-explorer`, 1x `task-architect`, 1x `task-reviewer` | `sonnet` for explorer/reviewer; `sonnet` for architect at score 3–6, `opus` for architect at score 7–8 |
 | `complex` | 2–3x `task-explorer` (parallel), 2–3x `task-architect` (parallel), 3x `task-reviewer` (parallel) | `sonnet` for explorers; `opus` for architects and at least one reviewer pass; implementation itself stays on the main thread's inherited model unless a specific step is flagged high-risk, in which case delegate that step to an `opus` agent |
 
@@ -32,3 +32,5 @@ The `Agent` tool currently exposes `haiku`, `sonnet`, `opus`, and `fable` as sel
 ## Why the triage step itself runs on Haiku
 
 A real JEV-style decision model is deliberately small and fast (the reference implementation reports 70–500ms latency) because the decision layer runs far more often than the work layer, and correctness there comes from a tight schema, not from raw model size. The `jev-triage` agent in this plugin follows the same principle: it runs on `haiku` with a strict JSON output contract, keeping triage cheap regardless of how expensive the downstream lane turns out to be.
+
+This is also why `jev-triage` fires more than once per task (see `decision-primitives.md`'s "Secondary decision checkpoints"): the whole point of a cheap decision layer is that it's cheap enough to call repeatedly, so routing decisions throughout the pipeline — not just the initial one — get offloaded from Sonnet/Opus reasoning onto a bounded haiku classification instead.

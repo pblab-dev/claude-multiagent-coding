@@ -21,7 +21,7 @@ Load this skill whenever a triage decision is needed before executing a task —
 1. **Classify** the request using the three primitives. First attempt the external decision layer (`scripts/jev-decide.sh` — see `references/decision-primitives.md` for how it's wired and when it's skipped); fall back to classifying with Claude itself when no external layer is configured or it fails. Full primitive definitions and the output JSON contract are in `references/decision-primitives.md`:
    - `task_type` (Escolha): `feature` | `bugfix` | `refactor` | `specific-task` | `mcp-task` | `research` — see `references/task-taxonomy.md` for what distinguishes each.
    - `complexity_score` (Pontuação): 0–10, scored against concrete criteria (files touched, design decisions required, integration points, ambiguity, blast radius).
-   - `needs_clarification`, `needs_mcp`, `needs_multiagent` (Noul): each a `{value, confidence}` pair.
+   - `needs_clarification`, `needs_mcp`, `needs_multiagent`, `high_stakes` (Noul): each a `{value, confidence}` pair.
 
 2. **Route** the classification to a lane and model tier using the tables in `references/model-routing.md`. The four lanes are:
    - `quick` — main thread executes directly, no sub-agents, no model override.
@@ -29,9 +29,11 @@ Load this skill whenever a triage decision is needed before executing a task —
    - `standard` — one explorer + one architect + one reviewer, mostly Sonnet, Opus for architecture at higher scores.
    - `complex` — full parallel multi-agent pipeline (2–3 explorers, 2–3 architects, 3 reviewers), Opus for architecture and at least one review pass.
 
-3. **Surface real ambiguity before proceeding.** If `needs_clarification.value` is true — including when it was forced true because its own confidence was below 0.6 — ask the user via `AskUserQuestion` rather than guessing; never silently pick a lane when the request is genuinely ambiguous. A low-confidence `needs_mcp` or `needs_multiagent`, by contrast, just resolves to `true` (provision more effort) without needing to interrupt the user.
+3. **Surface real ambiguity before proceeding.** If `needs_clarification.value` is true — including when it was forced true because its own confidence was below 0.6 — ask the user via `AskUserQuestion` rather than guessing; never silently pick a lane when the request is genuinely ambiguous. A low-confidence `needs_mcp`, `needs_multiagent`, or `high_stakes`, by contrast, just resolves to `true` (provision more effort/caution) without needing to interrupt the user by itself.
 
 4. **Emit the decision as a single structured block** (the JSON contract in `references/decision-primitives.md`) before starting the chosen lane. This keeps the routing decision auditable — the user can see *why* a task got the effort level it got.
+
+5. **Keep deciding cheaply as the pipeline runs, not just at the start.** The `standard` and `complex` lanes call `jev-triage` two more times — once after exploration (re-triage: did the scope turn out bigger than expected?) and once after review (route the outcome: proceed, fix now, or ask?). See "Secondary decision checkpoints" in `references/decision-primitives.md`. Treating triage as a one-shot gate defeats the purpose of having a cheap decision layer at all — it should be cheap enough to consult repeatedly.
 
 ## Design principle: decide small, execute big
 

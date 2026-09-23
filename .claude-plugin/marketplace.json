@@ -1,0 +1,29 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-multiagent-coding",
+  "owner": {
+    "name": "pblab-dev"
+  },
+  "metadata": {
+    "description": "Marketplace for smart-task, a JEV-inspired multi-agent task router for Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "smart-task",
+      "source": "./",
+      "description": "Multi-agent development command that uses a JEV-inspired structured decision layer to route any task (feature, bugfix, specific task, or MCP task) to the right pipeline depth and model tier (Haiku/Sonnet/Opus).",
+      "author": {
+        "name": "pblab-dev"
+      },
+      "category": "development",
+      "keywords": [
+        "multi-agent",
+        "jev",
+        "task-routing",
+        "model-routing",
+        "development-workflow",
+        "claude-code-plugin"
+      ]
+    }
+  ]
+}
